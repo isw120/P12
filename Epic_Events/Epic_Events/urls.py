@@ -15,7 +15,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .views import ClientView, ContractView, EventView, ReadOnlyClient, ReadOnlyContract, ReadOnlyEvent
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('ReadOnlyClient/', ReadOnlyClient.as_view()),
+    path('ReadOnlyContract/', ReadOnlyContract.as_view()),
+    path('ReadOnlyEvent/', ReadOnlyEvent.as_view()),
+    path('Client/', ClientView.as_view(), name='Client'),
+    path('Client/<client_id>', ClientView.as_view(), name='Client'),
+    path('Contract/', ContractView.as_view(), name='Contract'),
+    path('Contract/<client_id>/<contract_id>', ContractView.as_view(), name='Contract'),
+    path('Event/', EventView.as_view(), name='Event'),
+    path('Event/<client_id>/<contract_id>/<event_id>', EventView.as_view(), name='Event'),
 ]

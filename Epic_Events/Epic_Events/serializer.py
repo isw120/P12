@@ -1,0 +1,124 @@
+from rest_framework import serializers
+
+from .models import Client, Contract, Event, User
+
+
+class ClientSerializer(serializers.ModelSerializer):
+    sales_user = serializers.CharField(source='sales_user.username', required=False)
+    is_confirmed_client = serializers.BooleanField(allow_null=True, default=False, required=False)
+
+    class Meta:
+        model = Client
+        fields = '__all__'
+        read_only_fields = ('id', 'sales_user', 'created_date', 'updated_date')
+
+    def create(self, validated_data):
+        sales_user = self.context['request'].user
+        first_name = validated_data['first_name']
+        last_name = validated_data['last_name']
+        email = validated_data['email']
+        phone = validated_data['phone']
+        mobile = validated_data['mobile']
+        company_name = validated_data['company_name']
+        is_confirmed_client = validated_data['is_confirmed_client']
+        client_obj = Client(sales_user=sales_user,
+                            first_name=first_name,
+                            last_name=last_name,
+                            email=email,
+                            phone=phone,
+                            mobile=mobile,
+                            company_name=company_name,
+                            is_confirmed_client=is_confirmed_client)
+        client_obj.save()
+        return validated_data
+
+
+class ContractSerializer(serializers.ModelSerializer):
+    client = serializers.CharField(source='client.first_name', required=False)
+    sales_user = serializers.CharField(source='sales_user.username', required=False)
+    is_signed = serializers.BooleanField(allow_null=True, default=False, required=False)
+
+    class Meta:
+        model = Contract
+        fields = '__all__'
+        read_only_fields = ('id', 'created_date', 'updated_date')
+
+    def create(self, validated_data):
+        if Client.objects.filter(first_name=validated_data['client']).exists():
+            client = Client.objects.get(first_name=validated_data['client'])
+        else:
+            raise serializers.ValidationError("There are no client with this id")
+        sales_user = self.context['request'].user
+        name = validated_data['name']
+        description = validated_data['description']
+        amount = validated_data['amount']
+        is_signed = validated_data['is_signed']
+        contract_obj = Contract(client=client,
+                                sales_user=sales_user,
+                                name=name,
+                                description=description,
+                                amount=amount,
+                                is_signed=is_signed)
+        contract_obj.save()
+        return validated_data
+
+    def validate(self, attrs):
+        client = Client.objects.get(first_name=attrs['client'])
+
+        if client.is_confirmed_client:
+            pass
+        else:
+            raise serializers.ValidationError('This client is not a confirmed client yet')
+
+        return attrs
+
+
+class EventSerializer(serializers.ModelSerializer):
+    client = serializers.CharField(source='client.first_name', required=False)
+    sales_user = serializers.CharField(allow_null=True, required=False, source='sales_user.username')
+    support_user = serializers.CharField(allow_null=True, required=False, source='support_user.username')
+    event_date = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S", allow_null=True, required=False)
+    is_finished = serializers.BooleanField(allow_null=True, default=False, required=False)
+
+    class Meta:
+        model = Event
+        fields = '__all__'
+        read_only_fields = ('id', 'created_date', 'updated_date')
+
+    def create(self, validated_data):
+        client = validated_data['client']
+        sales_user = None
+        support_user = None
+        if User.objects.filter(id=self.context['request'].user.id).exists():
+            if self.context['request'].user.role == "Vente":
+                sales_user = self.context['request'].user
+            else:
+                support_user = self.context['request'].user
+        contract = validated_data['contract']
+        name = validated_data['name']
+        description = validated_data['description']
+        guests_number = validated_data['guests_number']
+        event_date = validated_data['event_date']
+        is_finished = validated_data['is_finished']
+        event_obj = Event(client=client,
+                          sales_user=sales_user,
+                          support_user=support_user,
+                          contract=contract,
+                          name=name,
+                          description=description,
+                          guests_number=guests_number,
+                          event_date=event_date,
+                          is_finished=is_finished,
+                          )
+        event_obj.save()
+        return validated_data
+
+    def validate(self, attrs):
+        contract = Contract.objects.get(id=attrs['contract'].id)
+
+        if contract.is_signed:
+            pass
+        else:
+            raise serializers.ValidationError('The event cannot be created until it\'s contract is signed')
+
+        return attrs
