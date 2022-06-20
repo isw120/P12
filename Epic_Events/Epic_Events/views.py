@@ -90,7 +90,8 @@ class ClientView(APIView):
                     return Response({"You cannot updated the informations of a client that is not assigned to you"},
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({"There are no client with this id"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"There are no client with the id : " + str(client_id)},
+                                status=status.HTTP_400_BAD_REQUEST)
 
 
 class ContractView(APIView):
@@ -151,9 +152,11 @@ class ContractView(APIView):
                             {"You cannot updated the informations of a contract that is not assigned to you"},
                             status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    return Response({"There are no contract with this id"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"There are no contract with the id : " + str(contract_id)},
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({"There are no client with this id"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"There are no client with the id : " + str(client_id)},
+                                status=status.HTTP_400_BAD_REQUEST)
 
 
 class EventView(APIView):
@@ -220,11 +223,14 @@ class EventView(APIView):
                                 {"You cannot updated the informations of an event that is not assigned to you"},
                                 status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        return Response({"There are no event with this id"}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({"There are no event with the id : " + str(event_id)},
+                                        status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    return Response({"There are no contract with this id"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"There are no contract with the id : " + str(contract_id)},
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({"There are no client with this id"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"There are no client with the id : " + str(client_id)},
+                                status=status.HTTP_400_BAD_REQUEST)
 
 
 def getAdvice():

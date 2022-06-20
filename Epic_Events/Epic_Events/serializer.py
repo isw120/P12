@@ -1,10 +1,11 @@
+from datetime import datetime
+
 from rest_framework import serializers
 
-from .models import Client, Contract, Event, User
+from .models import Client, Contract, Event
 
 
 class ClientSerializer(serializers.ModelSerializer):
-    sales_user = serializers.CharField(source='sales_user.username', required=False)
     is_confirmed_client = serializers.BooleanField(allow_null=True, default=False, required=False)
 
     class Meta:
@@ -34,8 +35,7 @@ class ClientSerializer(serializers.ModelSerializer):
 
 
 class ContractSerializer(serializers.ModelSerializer):
-    client = serializers.CharField(source='client.first_name', required=False)
-    sales_user = serializers.CharField(source='sales_user.username', required=False)
+    client = serializers.CharField(required=False)
     is_signed = serializers.BooleanField(allow_null=True, default=False, required=False)
 
     class Meta:
@@ -44,10 +44,7 @@ class ContractSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_date', 'updated_date')
 
     def create(self, validated_data):
-        if Client.objects.filter(first_name=validated_data['client']).exists():
-            client = Client.objects.get(first_name=validated_data['client'])
-        else:
-            raise serializers.ValidationError("There are no client with this id")
+        client = Client.objects.get(first_name=validated_data['client'])
         sales_user = self.context['request'].user
         name = validated_data['name']
         description = validated_data['description']
@@ -63,21 +60,27 @@ class ContractSerializer(serializers.ModelSerializer):
         return validated_data
 
     def validate(self, attrs):
-        client = Client.objects.get(first_name=attrs['client'])
+        if self.context['request'].method == "POST":
+            if Client.objects.filter(first_name=attrs['client']).exists():
+                client = Client.objects.get(first_name=attrs['client'])
+            else:
+                raise serializers.ValidationError("There are no client with the first name : " + str(attrs['client']))
 
-        if client.is_confirmed_client:
-            pass
+            if client.is_confirmed_client:
+                pass
+            else:
+                raise serializers.ValidationError('This client is not a confirmed client yet')
         else:
-            raise serializers.ValidationError('This client is not a confirmed client yet')
+            pass
 
         return attrs
 
 
 class EventSerializer(serializers.ModelSerializer):
-    client = serializers.CharField(source='client.first_name', required=False)
-    sales_user = serializers.CharField(allow_null=True, required=False, source='sales_user.username')
-    support_user = serializers.CharField(allow_null=True, required=False, source='support_user.username')
-    event_date = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S", allow_null=True, required=False)
+    client = serializers.CharField(required=False)
+    contract = serializers.CharField(required=False)
+    event_date = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S", default=datetime.now, allow_null=True,
+                                           required=False)
     is_finished = serializers.BooleanField(allow_null=True, default=False, required=False)
 
     class Meta:
@@ -86,15 +89,14 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_date', 'updated_date')
 
     def create(self, validated_data):
-        client = validated_data['client']
+        client = Client.objects.get(first_name=validated_data['client'])
         sales_user = None
         support_user = None
-        if User.objects.filter(id=self.context['request'].user.id).exists():
-            if self.context['request'].user.role == "Vente":
-                sales_user = self.context['request'].user
-            else:
-                support_user = self.context['request'].user
-        contract = validated_data['contract']
+        if self.context['request'].user.role == "Vente":
+            sales_user = self.context['request'].user
+        else:
+            support_user = self.context['request'].user
+        contract = Contract.objects.get(name=validated_data['contract'])
         name = validated_data['name']
         description = validated_data['description']
         guests_number = validated_data['guests_number']
@@ -114,11 +116,23 @@ class EventSerializer(serializers.ModelSerializer):
         return validated_data
 
     def validate(self, attrs):
-        contract = Contract.objects.get(id=attrs['contract'].id)
+        if self.context['request'].method == "POST":
+            if Client.objects.filter(first_name=attrs['client']).exists():
+                pass
+            else:
+                raise serializers.ValidationError("There are no client with the first name : " + str(attrs['client']))
 
-        if contract.is_signed:
-            pass
+            if Contract.objects.filter(name=attrs['contract']).exists():
+                contract = Contract.objects.get(name=attrs['contract'])
+            else:
+                raise serializers.ValidationError("There are no contract with the name : " + str(attrs['contract']))
+
+            if contract.is_signed:
+                pass
+            else:
+                raise serializers.ValidationError('The event cannot be created until it\'s contract is signed')
+
         else:
-            raise serializers.ValidationError('The event cannot be created until it\'s contract is signed')
+            pass
 
         return attrs
