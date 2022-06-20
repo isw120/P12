@@ -76,9 +76,9 @@ WSGI_APPLICATION = 'Epic_Events.wsgi.application'
 
 DATABASES = {
 'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql_psycopg',
         'NAME': 'epic_events_db',
-        'USER': 'psql',
+        'USER': 'root',
         'PASSWORD': 'root',
         'HOST': 'localhost',
         'PORT': '5432',
@@ -127,4 +127,4 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'Epic_Events.Users'
+AUTH_USER_MODEL = 'Epic_Events.User'
